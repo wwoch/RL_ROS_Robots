@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot name="explorer_robot">
+
+    <material name="green">
+        <color rgba="0 0.5 0 1" />
+    </material>
+
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="0.4 0.2 0.1" />
+            </geometry>
+            <origin xyz="0 0 0.1" rpy="0 0 0" />
+            <material name="green" />
+        </visual>
+    </link>
+
+    <link name="second_link">
+        <visual>
+            <geometry>
+                <cylinder radius="0.1" length="0.2" />
+            </geometry>
+            <origin xyz="0 0 0.1" rpy="0 0 0" />
+            <material name="grey" />
+        </visual>
+    </link>
+
+    <joint name="base_second_joint" type="fixed">
+        <parent link="base_link" />
+        <child link="second_link" />
+        <origin xyz="0 0 0.2" rpy="0 0 0" />
+    </joint>
+</robot>
