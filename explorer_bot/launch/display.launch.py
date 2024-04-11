@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     urdf_path = os.path.join(get_package_share_path('explorer_bot'),
-                             'urdf', 'explorer_robot.urdf')
+                             'urdf', 'explorer_robot.urdf.xacro')
 
     robot_description = ParameterValue(Command(['xacro ', urdf_path]), value_type=str) #pip install xacro
 
