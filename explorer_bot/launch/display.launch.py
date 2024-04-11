@@ -10,6 +10,9 @@ def generate_launch_description():
     urdf_path = os.path.join(get_package_share_path('explorer_bot'),
                              'urdf', 'explorer_robot.urdf.xacro')
 
+    rviz_config_path = os.path.join(get_package_share_path('explorer_bot'),
+                             'rviz', 'urdf_config.rviz')
+
     robot_description = ParameterValue(Command(['xacro ', urdf_path]), value_type=str) #pip install xacro
 
     robot_state_publisher_node = Node(
@@ -23,13 +26,14 @@ def generate_launch_description():
         executable="joint_state_publisher_gui"
     )
 
-    rvizz2_node = Node(
+    rviz2_node = Node(
         package="rviz2",
-        executable="rviz2"
+        executable="rviz2",
+        arguments=['-d', rviz_config_path]
     )
 
     return LaunchDescription([
         robot_state_publisher_node,
         joint_state_publisher_gui_node,
-        rvizz2_node
+        rviz2_node
     ])
