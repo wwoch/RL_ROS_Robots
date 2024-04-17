@@ -13,6 +13,10 @@
         <color rgba="0.5 0.5 0.5 1" />
     </material>
 
+    <material name="red">
+        <color rgba="1 0 0 1" />
+    </material>
+
     <link name="base_footprint" />
 
     <link name="base_link">
@@ -120,13 +124,13 @@
         </collision>
     </link>
 
-    <link name="turret_bottom_link">
+    <link name="lidar_sensor">
         <visual>
             <geometry>
                 <cylinder radius="0.06" length="0.05"/> 
             </geometry>
             <origin xyz="0 0 0.1" rpy="0 0 0"/> 
-            <material name="black"/>
+            <material name="red"/>
         </visual>
         <inertia>
             <origin xyz="0 0 0.1" rpy="0 0 0" />
@@ -196,7 +200,7 @@
 
     <joint name="turret_bottom_joint" type="fixed">
         <parent link="turret_link"/>
-        <child link="turret_bottom_link"/>
+        <child link="lidar_sensor"/>
         <origin xyz="0 0 -0.075" rpy="0 0 0"/>
     </joint>
 
@@ -206,6 +210,5 @@
         <child link="turret_top_link"/>
         <origin xyz="0 0 0.175" rpy="0 0 0"/>
     </joint>
-
 
 </robot>
