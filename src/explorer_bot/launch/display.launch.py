@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     urdf_path = os.path.join(get_package_share_path('explorer_bot'),
-                             'urdf', 'explorer_robot.urdf.xacro')
+                             'urdf', 'my_robot.urdf.xacro')
 
     rviz_config_path = os.path.join(get_package_share_path('explorer_bot'),
                              'rviz', 'urdf_config.rviz')
