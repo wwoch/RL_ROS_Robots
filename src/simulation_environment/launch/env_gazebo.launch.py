@@ -15,6 +15,9 @@ def generate_launch_description():
     gazebo_world_path = os.path.join(get_package_share_path('simulation_environment'),
                              'worlds', 'sq_wall.world')
 
+    rviz_config_path = os.path.join(get_package_share_path('simulation_environment'),
+                             'rviz', 'urdf_config.rviz')
+
 
     robot_description = ParameterValue(Command(['xacro ', urdf_path]), value_type=str)
 
@@ -32,6 +35,11 @@ def generate_launch_description():
         output='screen'
     )
 
+    rviz2_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        arguments=['-d', rviz_config_path]
+    )
 
     spawn_entity = Node(
         package='gazebo_ros',
@@ -42,8 +50,9 @@ def generate_launch_description():
 
 
     return LaunchDescription([
+        robot_state_publisher,        
         gazebo,
-        robot_state_publisher,
         spawn_entity,
+        rviz2_node
     ])
 
