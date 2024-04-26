@@ -13,7 +13,7 @@ def generate_launch_description():
                              'urdf', 'my_robot.urdf.xacro')
 
     gazebo_world_path = os.path.join(get_package_share_path('simulation_environment'),
-                             'worlds', 'sq_wall.world')
+                             'worlds', 'train_world.world')
 
     rviz_config_path = os.path.join(get_package_share_path('simulation_environment'),
                              'rviz', 'urdf_config.rviz')
@@ -25,6 +25,7 @@ def generate_launch_description():
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')]),
+        launch_arguments={'world': gazebo_world_path}.items(),
     )
 
 
