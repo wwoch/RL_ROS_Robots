@@ -7,6 +7,7 @@ import random
 from std_srvs.srv import Empty
 import math
 import json
+from rclpy.time import Time
 
 class AutoDriveNode(Node):
     def __init__(self):
@@ -17,11 +18,16 @@ class AutoDriveNode(Node):
 
         self.data_timer = self.create_timer(0.2, self.data_timer_callback)  # Co ile odbierać dane
         self.direction_timer = self.create_timer(1.0, self.direction_timer_callback)  # Co ile zmieniać kierunek jazdy
-        self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
+        
         self.current_direction = random.uniform(-(math.pi/2), math.pi/2)
         self.current_velocity = 0.5
         self.distance_to_obstacle = None
+
+        self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
         self.simulation_count = 0
+        self.simulation_start_time = self.get_clock().now()  
+        self.simulation_duration = None  
+
         self.publish_velocity()
         self.clear_json_file()
 
@@ -31,6 +37,9 @@ class AutoDriveNode(Node):
     def obstacle_callback(self, msg):
         if msg.data:
             self.get_logger().info('Obstacle detected, resetting simulation...')
+            self.simulation_end_time = self.get_clock().now()
+            self.simulation_duration = self.simulation_end_time - self.simulation_start_time
+            self.save_data_to_json()  
             self.simulation_count += 1
             self.reset_simulation()
 
@@ -52,9 +61,10 @@ class AutoDriveNode(Node):
             future.result()
             self.get_logger().info('Simulation reset successfully')
             self.distance_to_obstacle = None
-            self.save_data_to_json()
+            self.simulation_start_time = self.get_clock().now()  
+            self.simulation_duration = None  
         except Exception as e:
-            self.get_logger().error('Service call failed %r' % (e,))
+            self.get_logger().error(f'Service call failed {e!r}')
 
     def change_direction(self):
         self.current_direction = random.uniform(-(math.pi/4), math.pi/4)
@@ -72,10 +82,16 @@ class AutoDriveNode(Node):
             json.dump([], json_file)
 
     def save_data_to_json(self):
+        if self.simulation_duration is not None:
+            duration_in_seconds = self.simulation_duration.nanoseconds / 1e9
+        else:
+            duration_in_seconds = None
+
         data = {
             "simulation_count": self.simulation_count,
             "distance_to_obstacle": self.distance_to_obstacle,
-            "current_direction": self.current_direction
+            "current_direction": self.current_direction,
+            "simulation_duration": duration_in_seconds
         }
         try:
             with open('driving_data.json', 'r') as json_file:
