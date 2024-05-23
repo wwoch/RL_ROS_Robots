@@ -49,11 +49,17 @@ def generate_launch_description():
         output='screen'
     )
 
+    lidar_node = Node(
+        package='simulation_environment',
+        executable='lidar_node.py',
+        name='lidar_node',
+        output='screen',
+    )
 
     return LaunchDescription([
         robot_state_publisher,        
         gazebo,
         spawn_entity,
-        rviz2_node
+        rviz2_node,
+        lidar_node
     ])
-
