@@ -15,7 +15,8 @@ class AutoDriveNode(Node):
         self.subscription_distance = self.create_subscription(Float32, '/distance_to_obstacle', self.distance_callback, 10)
         self.subscription_collision = self.create_subscription(Bool, '/collision_detected', self.obstacle_callback, 10)
 
-        self.timer = self.create_timer(1, self.timer_callback)
+        self.data_timer = self.create_timer(0.2, self.data_timer_callback)  # Co ile odbierać dane
+        self.direction_timer = self.create_timer(1.0, self.direction_timer_callback)  # Co ile zmieniać kierunek jazdy
         self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
         self.current_direction = random.uniform(-(math.pi/2), math.pi/2)
         self.current_velocity = 0.5
@@ -33,8 +34,10 @@ class AutoDriveNode(Node):
             self.simulation_count += 1
             self.reset_simulation()
 
-    def timer_callback(self):
+    def direction_timer_callback(self):
         self.change_direction()
+
+    def data_timer_callback(self):
         self.save_data_to_json()
 
     def reset_simulation(self):
