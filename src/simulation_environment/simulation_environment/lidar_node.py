@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
@@ -18,6 +19,7 @@ class MinimalDistanceNode(Node):
         self.get_logger().info(f'Najbliższa przeszkoda jest w odległości: {min_distance:.2f} metra')
 
 def main(args=None):
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     rclpy.init(args=args)
     minimal_distance_node = MinimalDistanceNode()
     rclpy.spin(minimal_distance_node)
