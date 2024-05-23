@@ -23,7 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points22={
         'console_scripts': [
-            'lidar_node_test = simulation_environment.lidar_node:main',
+            'lidar_node = simulation_environment.lidar_node:main',
+            'auto_drive_node = simulation_environment.auto_drive:main',
         ],
     },
 )

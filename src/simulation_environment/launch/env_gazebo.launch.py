@@ -56,10 +56,18 @@ def generate_launch_description():
         output='screen',
     )
 
+    auto_drive_node = Node(
+        package='simulation_environment',
+        executable='auto_drive_node.py',
+        name='auto_drive_node',
+        output='screen',
+    )
+
     return LaunchDescription([
         robot_state_publisher,        
         gazebo,
         spawn_entity,
         rviz2_node,
-        lidar_node
+        lidar_node,
+        auto_drive_node
     ])
