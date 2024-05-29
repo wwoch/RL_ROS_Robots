@@ -139,23 +139,22 @@ class AutoDriveNode(Node):
             return "far"
         else:
             return "safe"
-
+    
     def save_data_to_json(self):
         if self.simulation_duration is not None:
             duration_in_seconds = self.simulation_duration.nanoseconds / 1e9
         else:
-            duration_in_seconds = None
-        
+            duration_in_seconds = (self.get_clock().now() - self.simulation_start_time).nanoseconds / 1e9
         if self.distance_to_obstacle is not None:
             distance_str = self.distance_to_string(self.distance_to_obstacle)
         else:
             distance_str = "far"
-        
+    
         if self.current_direction is not None:
             direction_str = self.direction_to_string(self.current_direction)
         else:
             direction_str = "unknown"
-            
+       
         if self.previous_distance != distance_str:
             self.previous_distance = distance_str
             data = {
@@ -169,9 +168,9 @@ class AutoDriveNode(Node):
                     data_history = json.load(json_file)
             except FileNotFoundError:
                 data_history = []
-    
+
             data_history.append(data)
-    
+
             with open('driving_data.json', 'w') as json_file:
                 json.dump(data_history, json_file, indent=4)
 
