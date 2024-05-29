@@ -24,6 +24,7 @@ class AutoDriveNode(Node):
         self.current_velocity = 0.5
         self.distance_to_obstacle = None
         self.previous_distance = None
+        self.previous_distance_status = None
  
         self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
         self.simulation_count = 0
@@ -144,21 +145,24 @@ class AutoDriveNode(Node):
         reward = 0
 
         if self.distance_to_obstacle is not None:
-            distance_str = self.distance_to_string(self.distance_to_obstacle)
+            current_distance_status = self.distance_to_string(self.distance_to_obstacle)
 
             if self.simulation_duration is not None:
                 sym_time = self.simulation_duration.nanoseconds / 1e9
             else:
                 sym_time = (self.get_clock().now() - self.simulation_start_time).nanoseconds / 1e9
 
-            if distance_str != "hit":
+            if current_distance_status != "hit":
                 #bez uderzenia (liczba sekund symulacji, min 10 punktów tj 1s - 10pkt, 2s - 20 pkt itd)
                 reward = sym_time * 10
-                self.get_logger().info(f'Reward for avoiding collision: {reward}')
+                #instynkt
+                if (self.previous_distance_status in ["close", "very close"]) and current_distance_status in ["safe", "far"]:
+                    reward += 10
             else:
                 #uderzenie (-20 + liczba sekund symulacji)
                 reward = -20 + sym_time * 10
-                self.get_logger().info(f'Penalty for collision: {reward}')
+
+            self.previous_distance_status = current_distance_status
         else:
             #bez nagrody, gdy nie ma danych o przeszkodzie
             self.get_logger().info('No data available for reward calculation.')
@@ -180,13 +184,12 @@ class AutoDriveNode(Node):
             direction_str = self.direction_to_string(self.current_direction)
         else:
             direction_str = "unknown"
-    
+
         if self.previous_distance != distance_str:
             self.previous_distance = distance_str
 
             reward = self.RL_rewards()
             reward = round(reward, 2)
-
 
             data = {
                 "simulation_count": self.simulation_count,
@@ -206,6 +209,7 @@ class AutoDriveNode(Node):
 
             with open('driving_data.json', 'w') as json_file:
                 json.dump(data_history, json_file, indent=4)
+
 
 
 def main(args=None):
