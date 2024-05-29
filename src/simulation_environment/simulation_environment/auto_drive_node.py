@@ -155,12 +155,15 @@ class AutoDriveNode(Node):
             if current_distance_status != "hit":
                 #bez uderzenia (liczba sekund symulacji, min 10 punktów tj 1s - 10pkt, 2s - 20 pkt itd)
                 reward = sym_time * 10
+                self.get_logger().info(f'Reward for simulation time: {reward}')
                 #instynkt
                 if (self.previous_distance_status in ["close", "very close"]) and current_distance_status in ["safe", "far"]:
                     reward += 10
+                    self.get_logger().info(f'Reward for avoiding collision: {reward}')
             else:
                 #uderzenie (-20 + liczba sekund symulacji)
-                reward = -20 + sym_time * 10
+                reward = -20 + sym_time * (-10)
+                self.get_logger().info(f'Penalty for collision: {reward}')
 
             self.previous_distance_status = current_distance_status
         else:
