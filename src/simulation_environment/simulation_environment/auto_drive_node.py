@@ -180,27 +180,33 @@ class AutoDriveNode(Node):
             direction_str = self.direction_to_string(self.current_direction)
         else:
             direction_str = "unknown"
+    
+        if self.previous_distance != distance_str:
+            self.previous_distance = distance_str
 
-        reward = self.RL_rewards()
+            reward = self.RL_rewards()
+            reward = round(reward, 2)
 
-        data = {
-            "simulation_count": self.simulation_count,
-            "distance_to_obstacle": distance_str,
-            "current_direction": direction_str,
-            "simulation_duration": duration_in_seconds,
-            "reward": reward
-        }
 
-        try:
-            with open('driving_data.json', 'r') as json_file:
-                data_history = json.load(json_file)
-        except FileNotFoundError:
-            data_history = []
+            data = {
+                "simulation_count": self.simulation_count,
+                "distance_to_obstacle": distance_str,
+                "current_direction": direction_str,
+                "simulation_duration": duration_in_seconds,
+                "reward": reward
+            }
 
-        data_history.append(data)
+            try:
+                with open('driving_data.json', 'r') as json_file:
+                    data_history = json.load(json_file)
+            except FileNotFoundError:
+                data_history = []
 
-        with open('driving_data.json', 'w') as json_file:
-            json.dump(data_history, json_file, indent=4)
+            data_history.append(data)
+
+            with open('driving_data.json', 'w') as json_file:
+                json.dump(data_history, json_file, indent=4)
+
 
 def main(args=None):
     rclpy.init(args=args)
