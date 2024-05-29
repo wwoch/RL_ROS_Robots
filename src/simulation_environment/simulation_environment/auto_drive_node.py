@@ -18,6 +18,7 @@ class AutoDriveNode(Node):
 
         self.data_timer = self.create_timer(0.1, self.data_timer_callback)  # Co ile odbierać dane
         self.direction_timer = self.create_timer(1.0, self.direction_timer_callback)  # Co ile zmieniać kierunek jazdy
+        self.time_check_timer = self.create_timer(0.1, self.time_check_callback)  # Timer do czasu symulacji
 
         self.current_direction = random.uniform(-(math.pi/2), math.pi/2)
         self.current_velocity = 0.5
@@ -28,6 +29,7 @@ class AutoDriveNode(Node):
         self.simulation_limit = 10  
         self.simulation_start_time = self.get_clock().now()  
         self.simulation_duration = None  
+        self.simulation_time_limit = 10.0
         
         self.publish_velocity()
         self.clear_json_file()
@@ -39,23 +41,45 @@ class AutoDriveNode(Node):
     def obstacle_callback(self, msg):
         if msg.data:
             self.get_logger().info('Obstacle detected, resetting simulation...')
-            self.simulation_end_time = self.get_clock().now()
-            self.simulation_duration = self.simulation_end_time - self.simulation_start_time
-            self.save_data_to_json()  
-            self.simulation_count += 1
-
-            if self.simulation_count >= self.simulation_limit:
-                self.get_logger().info('Simulation limit reached, shutting down...')
-                rclpy.shutdown()
-                return
-
-            self.reset_simulation()
+            self.reset_simulation_due_to_obstacle()
 
     def direction_timer_callback(self):
         self.change_direction()
 
     def data_timer_callback(self):
         self.save_data_to_json()
+
+    def time_check_callback(self):
+        elapsed_time = (self.get_clock().now() - self.simulation_start_time).nanoseconds / 1e9
+        if elapsed_time > self.simulation_time_limit:
+            self.get_logger().info('Simulation time limit reached, resetting simulation...')
+            self.reset_simulation_due_to_time()
+
+    def reset_simulation_due_to_obstacle(self):
+        self.simulation_end_time = self.get_clock().now()
+        self.simulation_duration = self.simulation_end_time - self.simulation_start_time
+        self.save_data_to_json()
+        self.simulation_count += 1
+
+        if self.simulation_count >= self.simulation_limit:
+            self.get_logger().info('Simulation limit reached, shutting down...')
+            rclpy.shutdown()
+            return
+
+        self.reset_simulation()
+
+    def reset_simulation_due_to_time(self):
+        self.simulation_end_time = self.get_clock().now()
+        self.simulation_duration = self.simulation_end_time - self.simulation_start_time
+        self.save_data_to_json()
+        self.simulation_count += 1
+
+        if self.simulation_count >= self.simulation_limit:
+            self.get_logger().info('Simulation limit reached, shutting down...')
+            rclpy.shutdown()
+            return
+
+        self.reset_simulation()
 
     def reset_simulation(self):
         while not self.reset_simulation_client.wait_for_service(timeout_sec=1.0):
@@ -133,7 +157,6 @@ class AutoDriveNode(Node):
             
         data = {
             "simulation_count": self.simulation_count,
-            #"distance_to_obstacle": (self.distance_to_obstacle, distance_str),
             "distance_to_obstacle": distance_str,
             "current_direction": direction_str,
             "simulation_duration": duration_in_seconds
