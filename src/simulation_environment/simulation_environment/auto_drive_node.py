@@ -16,7 +16,7 @@ class AutoDriveNode(Node):
         self.subscription_distance = self.create_subscription(Float32, '/distance_to_obstacle', self.distance_callback, 10)
         self.subscription_collision = self.create_subscription(Bool, '/collision_detected', self.obstacle_callback, 10)
 
-        self.data_timer = self.create_timer(0.2, self.data_timer_callback)  # Co ile odbierać dane
+        self.data_timer = self.create_timer(0.1, self.data_timer_callback)  # Co ile odbierać dane
         self.direction_timer = self.create_timer(1.0, self.direction_timer_callback)  # Co ile zmieniać kierunek jazdy
 
         self.current_direction = random.uniform(-(math.pi/2), math.pi/2)
@@ -25,7 +25,7 @@ class AutoDriveNode(Node):
 
         self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
         self.simulation_count = 0
-        self.simulation_limit = 5  
+        self.simulation_limit = 10  
         self.simulation_start_time = self.get_clock().now()  
         self.simulation_duration = None  
         
@@ -34,6 +34,7 @@ class AutoDriveNode(Node):
 
     def distance_callback(self, msg):
         self.distance_to_obstacle = msg.data
+        self.get_logger().info(f'Odległość od przeszkody: {self.distance_to_string(self.distance_to_obstacle)}')
 
     def obstacle_callback(self, msg):
         if msg.data:
@@ -74,7 +75,7 @@ class AutoDriveNode(Node):
             self.get_logger().error(f'Service call failed {e!r}')
 
     def change_direction(self):
-        self.current_direction = random.uniform(-(math.pi/4), math.pi/4)
+        self.current_direction = random.uniform(-(math.pi/2), math.pi/2)
         self.publish_velocity()
 
     def publish_velocity(self):
@@ -87,16 +88,54 @@ class AutoDriveNode(Node):
     def clear_json_file(self):
         with open('driving_data.json', 'w') as json_file:
             json.dump([], json_file)
+    
+    def direction_to_string(self, direction):
+        if direction > math.pi/4:
+            return 'hard right'
+        elif direction > math.pi/12:
+            return 'right'
+        elif direction < -math.pi/4:
+            return 'hard left'
+        elif direction < -math.pi/12:
+            return 'left'
+        else:
+            return 'forward'
+    
+    def distance_to_string(self, distance):
+        if distance < 0.4:
+            return "hit"
+        elif distance < 0.6:
+            return "very close"
+        elif distance < 1.0:
+            return "close"
+        elif distance < 1.5:
+            return "safe"
+        elif distance > 2.0:
+            return "far"
+        else:
+            return "safe"
 
     def save_data_to_json(self):
         if self.simulation_duration is not None:
             duration_in_seconds = self.simulation_duration.nanoseconds / 1e9
         else:
             duration_in_seconds = None
+        
+        if self.distance_to_obstacle is not None:
+            distance_str = self.distance_to_string(self.distance_to_obstacle)
+        else:
+            distance_str = "unknown"
+        
+        if self.current_direction is not None:
+            direction_str = self.direction_to_string(self.current_direction)
+        else:
+            direction_str = "unknown"
+            
         data = {
             "simulation_count": self.simulation_count,
-            "distance_to_obstacle": self.distance_to_obstacle,
-            "current_direction": self.current_direction,
+            #"distance_to_obstacle": (self.distance_to_obstacle, distance_str),
+            "distance_to_obstacle": distance_str,
+            "current_direction": direction_str,
             "simulation_duration": duration_in_seconds
         }
         try:
