@@ -24,7 +24,7 @@ class AutoDriveNode(Node):
         self.current_velocity = 0.5
         self.distance_to_obstacle = None
         self.previous_distance = None
-
+ 
         self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
         self.simulation_count = 0
         self.simulation_limit = 10  
@@ -140,39 +140,67 @@ class AutoDriveNode(Node):
         else:
             return "safe"
     
+    def RL_rewards(self):
+        reward = 0
+
+        if self.distance_to_obstacle is not None:
+            distance_str = self.distance_to_string(self.distance_to_obstacle)
+
+            if self.simulation_duration is not None:
+                sym_time = self.simulation_duration.nanoseconds / 1e9
+            else:
+                sym_time = (self.get_clock().now() - self.simulation_start_time).nanoseconds / 1e9
+
+            if distance_str != "hit":
+                #bez uderzenia (liczba sekund symulacji, min 10 punktów tj 1s - 10pkt, 2s - 20 pkt itd)
+                reward = sym_time * 10
+                self.get_logger().info(f'Reward for avoiding collision: {reward}')
+            else:
+                #uderzenie (-20 + liczba sekund symulacji)
+                reward = -20 + sym_time * 10
+                self.get_logger().info(f'Penalty for collision: {reward}')
+        else:
+            #bez nagrody, gdy nie ma danych o przeszkodzie
+            self.get_logger().info('No data available for reward calculation.')
+
+        return reward
+
     def save_data_to_json(self):
         if self.simulation_duration is not None:
             duration_in_seconds = self.simulation_duration.nanoseconds / 1e9
         else:
             duration_in_seconds = (self.get_clock().now() - self.simulation_start_time).nanoseconds / 1e9
+
         if self.distance_to_obstacle is not None:
             distance_str = self.distance_to_string(self.distance_to_obstacle)
         else:
             distance_str = "far"
-    
+
         if self.current_direction is not None:
             direction_str = self.direction_to_string(self.current_direction)
         else:
             direction_str = "unknown"
-       
-        if self.previous_distance != distance_str:
-            self.previous_distance = distance_str
-            data = {
-                "simulation_count": self.simulation_count,
-                "distance_to_obstacle": distance_str,
-                "current_direction": direction_str,
-                "simulation_duration": duration_in_seconds
-            }
-            try:
-                with open('driving_data.json', 'r') as json_file:
-                    data_history = json.load(json_file)
-            except FileNotFoundError:
-                data_history = []
 
-            data_history.append(data)
+        reward = self.RL_rewards()
 
-            with open('driving_data.json', 'w') as json_file:
-                json.dump(data_history, json_file, indent=4)
+        data = {
+            "simulation_count": self.simulation_count,
+            "distance_to_obstacle": distance_str,
+            "current_direction": direction_str,
+            "simulation_duration": duration_in_seconds,
+            "reward": reward
+        }
+
+        try:
+            with open('driving_data.json', 'r') as json_file:
+                data_history = json.load(json_file)
+        except FileNotFoundError:
+            data_history = []
+
+        data_history.append(data)
+
+        with open('driving_data.json', 'w') as json_file:
+            json.dump(data_history, json_file, indent=4)
 
 def main(args=None):
     rclpy.init(args=args)
