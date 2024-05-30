@@ -26,12 +26,6 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
 
-    declare_use_sim_time_argument = DeclareLaunchArgument(
-        'use_sim_time',
-        default_value='true',
-        description='Use simulation (Gazebo) clock if true'
-    )
-    
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')]),
@@ -81,7 +75,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        declare_use_sim_time_argument,
         robot_state_publisher,        
         gazebo,
         spawn_entity,
