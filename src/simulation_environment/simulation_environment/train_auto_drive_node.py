@@ -15,6 +15,7 @@ class AutoDriveNode(Node):
         self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
         self.subscription_distance = self.create_subscription(Float32, '/distance_to_obstacle', self.distance_callback, 10)
         self.subscription_collision = self.create_subscription(Bool, '/collision_detected', self.obstacle_callback, 10)
+        self.publisher_stop_lidar = self.create_publisher(Bool, '/stop_lidar', 10)
 
         self.data_timer = self.create_timer(0.2, self.data_timer_callback)  # Co ile odbierać dane
         self.direction_timer = self.create_timer(1.0, self.direction_timer_callback)  # Co ile zmieniać kierunek jazdy
@@ -38,7 +39,7 @@ class AutoDriveNode(Node):
 
     def distance_callback(self, msg):
         self.distance_to_obstacle = msg.data
-        self.get_logger().info(f'Odległość od przeszkody: {self.distance_to_string(self.distance_to_obstacle)}')
+        self.get_logger().info(f'Distance to obstacle: {self.distance_to_string(self.distance_to_obstacle)}')
 
     def obstacle_callback(self, msg):
         if msg.data:
@@ -57,6 +58,13 @@ class AutoDriveNode(Node):
             self.get_logger().info('Simulation time limit reached, resetting simulation...')
             self.reset_simulation_due_to_time()
 
+    def reset_simulation(self):
+        while not self.reset_simulation_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().warn('Reset simulation service not available, waiting again...')
+        reset_request = Empty.Request()
+        future = self.reset_simulation_client.call_async(reset_request)
+        future.add_done_callback(self.future_callback)
+
     def reset_simulation_due_to_obstacle(self):
         self.simulation_end_time = self.get_clock().now()
         self.simulation_duration = self.simulation_end_time - self.simulation_start_time
@@ -65,6 +73,7 @@ class AutoDriveNode(Node):
 
         if self.simulation_count >= self.simulation_limit:
             self.get_logger().info('Simulation limit reached, shutting down...')
+            self.publisher_stop_lidar.publish(Bool(data=True))
             rclpy.shutdown()
             return
 
@@ -78,17 +87,11 @@ class AutoDriveNode(Node):
 
         if self.simulation_count >= self.simulation_limit:
             self.get_logger().info('Simulation limit reached, shutting down...')
+            self.publisher_stop_lidar.publish(Bool(data=True))
             rclpy.shutdown()
             return
 
         self.reset_simulation()
-
-    def reset_simulation(self):
-        while not self.reset_simulation_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn('Reset simulation service not available, waiting again...')
-        reset_request = Empty.Request()
-        future = self.reset_simulation_client.call_async(reset_request)
-        future.add_done_callback(self.future_callback)
 
     def future_callback(self, future):
         try:
@@ -212,7 +215,6 @@ class AutoDriveNode(Node):
 
             with open('driving_data.json', 'w') as json_file:
                 json.dump(data_history, json_file, indent=4)
-
 
 
 def main(args=None):

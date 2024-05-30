@@ -34,9 +34,16 @@ install(
 
 install(
   PROGRAMS
-  simulation_environment/auto_drive_node.py
+  simulation_environment/train_auto_drive_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
+
+install(
+  PROGRAMS
+  simulation_environment/pytorch_dqn.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 
 ament_python_install_package(${PROJECT_NAME})
 

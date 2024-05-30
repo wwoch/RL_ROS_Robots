@@ -6,6 +6,9 @@ from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, Command, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch.actions import Shutdown, RegisterEventHandler
+from launch.event_handlers import OnProcessExit, OnProcessIO
+
 
 def generate_launch_description():
  
@@ -21,13 +24,19 @@ def generate_launch_description():
 
     robot_description = ParameterValue(Command(['xacro ', urdf_path]), value_type=str)
 
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
 
+    declare_use_sim_time_argument = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='true',
+        description='Use simulation (Gazebo) clock if true'
+    )
+    
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')]),
         launch_arguments={'world': gazebo_world_path}.items(),
     )
-
 
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -39,7 +48,8 @@ def generate_launch_description():
     rviz2_node = Node(
         package="rviz2",
         executable="rviz2",
-        arguments=['-d', rviz_config_path]
+        arguments=['-d', rviz_config_path],
+        parameters=[{'use_sim_time': use_sim_time}]
     )
 
     spawn_entity = Node(
@@ -56,18 +66,27 @@ def generate_launch_description():
         output='screen',
     )
 
-    auto_drive_node = Node(
+    train_auto_drive_node = Node(
         package='simulation_environment',
-        executable='auto_drive_node.py',
-        name='auto_drive_node',
+        executable='train_auto_drive_node.py',
+        name='train_auto_drive_node',
+        output='screen',
+    )
+
+    pytorch_dqn = Node(
+        package='simulation_environment',
+        executable='pytorch_dqn.py',
+        name='pytorch_dqn',
         output='screen',
     )
 
     return LaunchDescription([
+        declare_use_sim_time_argument,
         robot_state_publisher,        
         gazebo,
         spawn_entity,
         rviz2_node,
         lidar_node,
-        auto_drive_node
+        train_auto_drive_node,
+        #pytorch_dqn
     ])

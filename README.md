@@ -22,13 +22,13 @@ To launch the robot in the Gazebo simulator, you need to execute the `run_gazebo
 Follow these instructions to start the simulation:
 
 1. Open a terminal.
-2. Navigate to the directory containing the `run_gazebo_env.sh` script.
+2. Navigate to the directory containing the `run_train_env.sh` script.
 3. Ensure the script is executable. If it is not, you can make it executable by running:
    ```bash
-   chmod +x run_gazebo_env.sh
+   chmod +x run_train_env.sh
       ```
 4. Run the Script: Execute the script by running:
    ```bash
-   bash run_gazebo_env.sh
+   bash run_train_env.sh
    ```
 

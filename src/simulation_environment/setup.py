@@ -24,7 +24,8 @@ setup(
     entry_points22={
         'console_scripts': [
             'lidar_node = simulation_environment.lidar_node:main',
-            'auto_drive_node = simulation_environment.auto_drive:main',
+            'train_auto_drive_node = simulation_environment.auto_drive:main',
+            'pytorch_dqn = simulation_environment.pytorch_dqn:main',
         ],
     },
 )
