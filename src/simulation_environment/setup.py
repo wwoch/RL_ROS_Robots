@@ -26,6 +26,7 @@ setup(
             'lidar_node = simulation_environment.lidar_node:main',
             'train_auto_drive_node = simulation_environment.auto_drive:main',
             'pytorch_dqn = simulation_environment.pytorch_dqn:main',
+            'test_auto_drive_node = simulation_environment.test_auto_drive_node:main',
         ],
     },
 )

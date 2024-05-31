@@ -81,5 +81,5 @@ def generate_launch_description():
         rviz2_node,
         lidar_node,
         train_auto_drive_node,
-        #pytorch_dqn
+        pytorch_dqn
     ])

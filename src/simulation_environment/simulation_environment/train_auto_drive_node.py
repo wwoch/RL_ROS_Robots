@@ -29,10 +29,10 @@ class AutoDriveNode(Node):
  
         self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
         self.simulation_count = 0
-        self.simulation_limit = 10  
+        self.simulation_limit = 100
         self.simulation_start_time = self.get_clock().now()  
         self.simulation_duration = None  
-        self.simulation_time_limit = 5.0
+        self.simulation_time_limit = 10.0
         
         self.publish_velocity()
         self.clear_json_file()

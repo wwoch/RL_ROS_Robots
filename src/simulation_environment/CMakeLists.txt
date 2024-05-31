@@ -44,6 +44,12 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+  PROGRAMS
+  simulation_environment/test_auto_drive_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 
 ament_python_install_package(${PROJECT_NAME})
 
