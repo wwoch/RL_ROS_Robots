@@ -48,11 +48,11 @@ actions = []
 rewards = []
 next_states = []
 
-for entry in driving_data:
-    state = [distance_mapping[entry['distance_to_obstacle']], direction_mapping[entry['current_direction']]]
-    action = direction_mapping[entry['current_direction']]
-    reward = entry['reward']
-    next_state = state
+for i in range(len(driving_data) - 1):
+    state = [distance_mapping[driving_data[i]['distance_to_obstacle']], direction_mapping[driving_data[i]['current_direction']]]
+    next_state = [distance_mapping[driving_data[i + 1]['distance_to_obstacle']], direction_mapping[driving_data[i + 1]['current_direction']]]
+    action = direction_mapping[driving_data[i]['current_direction']]
+    reward = driving_data[i]['reward']
     states.append(state)
     actions.append(action)
     rewards.append(reward)

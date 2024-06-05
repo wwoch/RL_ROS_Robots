@@ -32,7 +32,7 @@ class AutoDriveNode(Node):
         self.simulation_limit = 100
         self.simulation_start_time = self.get_clock().now()  
         self.simulation_duration = None  
-        self.simulation_time_limit = 10.0
+        self.simulation_time_limit = 7.0
         
         self.publish_velocity()
         self.clear_json_file()
@@ -68,7 +68,7 @@ class AutoDriveNode(Node):
     def reset_simulation_due_to_obstacle(self):
         self.simulation_end_time = self.get_clock().now()
         self.simulation_duration = self.simulation_end_time - self.simulation_start_time
-        self.save_data_to_json()
+        self.save_data_to_json(final_reward=True)
         self.simulation_count += 1
 
         if self.simulation_count >= self.simulation_limit:
@@ -82,7 +82,7 @@ class AutoDriveNode(Node):
     def reset_simulation_due_to_time(self):
         self.simulation_end_time = self.get_clock().now()
         self.simulation_duration = self.simulation_end_time - self.simulation_start_time
-        self.save_data_to_json()
+        self.save_data_to_json(final_reward=True)
         self.simulation_count += 1
 
         if self.simulation_count >= self.simulation_limit:
@@ -144,8 +144,9 @@ class AutoDriveNode(Node):
         else:
             return "safe"
     
-    def RL_rewards(self):
+    def RL_rewards(self, final_reward=False):
         reward = 0
+
 
         if self.distance_to_obstacle is not None:
             current_distance_status = self.distance_to_string(self.distance_to_obstacle)
@@ -156,26 +157,27 @@ class AutoDriveNode(Node):
                 sym_time = (self.get_clock().now() - self.simulation_start_time).nanoseconds / 1e9
 
             if current_distance_status != "hit":
-                #bez uderzenia (liczba sekund symulacji, min 10 punktów tj 1s - 10pkt, 2s - 20 pkt itd)
-                reward = sym_time * 10
-                self.get_logger().info(f'Reward for simulation time: {reward}')
+                if final_reward:
+                    #bez uderzenia (liczba sekund symulacji, min 10 punktów tj 1s - 10pkt, 2s - 20 pkt itd)
+                    reward = sym_time * 10
+                    self.get_logger().info(f'Reward for simulation time at end: {reward}')
                 #instynkt
                 if (self.previous_distance_status in ["close", "very close"]) and current_distance_status in ["safe", "far"]:
-                    reward += 10
+                    reward += 35
                     self.get_logger().info(f'Reward for avoiding collision: {reward}')
             else:
-                #uderzenie (-20 + liczba sekund symulacji)
-                reward = -20 + sym_time * (-10)
+                # Penalty for collision
+                reward = (-20 + sym_time * (-10))
                 self.get_logger().info(f'Penalty for collision: {reward}')
 
             self.previous_distance_status = current_distance_status
         else:
-            #bez nagrody, gdy nie ma danych o przeszkodzie
+            # No reward if no obstacle data
             self.get_logger().info('No data available for reward calculation.')
 
         return reward
 
-    def save_data_to_json(self):
+    def save_data_to_json(self, final_reward=False):
         if self.simulation_duration is not None:
             duration_in_seconds = self.simulation_duration.nanoseconds / 1e9
         else:
@@ -191,10 +193,10 @@ class AutoDriveNode(Node):
         else:
             direction_str = "unknown"
 
-        if self.previous_distance != distance_str:
+        if self.previous_distance != distance_str or final_reward:
             self.previous_distance = distance_str
 
-            reward = self.RL_rewards()
+            reward = self.RL_rewards(final_reward=final_reward)
             reward = round(reward, 2)
 
             data = {
