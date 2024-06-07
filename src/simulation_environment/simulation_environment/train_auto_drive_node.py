@@ -12,6 +12,7 @@ from rclpy.time import Time
 class AutoDriveNode(Node):
     def __init__(self):
         super().__init__('auto_drive_node')
+        self.robot_type = self.declare_parameter('robot_type', 'A').get_parameter_value().string_value
         self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
         self.subscription_distance = self.create_subscription(Float32, '/distance_to_obstacle', self.distance_callback, 10)
         self.subscription_collision = self.create_subscription(Bool, '/collision_detected', self.obstacle_callback, 10)
@@ -29,7 +30,7 @@ class AutoDriveNode(Node):
  
         self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
         self.simulation_count = 0
-        self.simulation_limit = 100
+        self.simulation_limit = 2
         self.simulation_start_time = self.get_clock().now()  
         self.simulation_duration = None  
         self.simulation_time_limit = 7.0
@@ -115,9 +116,10 @@ class AutoDriveNode(Node):
         self.get_logger().info(f'Changed driving direction to: {self.current_direction:.2f}, moving forward')
 
     def clear_json_file(self):
-        with open('driving_data.json', 'w') as json_file:
+        filename = f'driving_data_{self.robot_type.lower()}.json'
+        with open(filename, 'w') as json_file:
             json.dump([], json_file)
-    
+
     def direction_to_string(self, direction):
         if direction > math.pi/4:
             return 'hard right'
@@ -146,36 +148,29 @@ class AutoDriveNode(Node):
     
     def RL_rewards(self, final_reward=False):
         reward = 0
-
-
         if self.distance_to_obstacle is not None:
             current_distance_status = self.distance_to_string(self.distance_to_obstacle)
-
-            if self.simulation_duration is not None:
-                sym_time = self.simulation_duration.nanoseconds / 1e9
-            else:
-                sym_time = (self.get_clock().now() - self.simulation_start_time).nanoseconds / 1e9
+            sym_time = self.simulation_duration.nanoseconds / 1e9 if self.simulation_duration else (self.get_clock().now() - self.simulation_start_time).nanoseconds / 1e9
 
             if current_distance_status != "hit":
                 if final_reward:
-                    #bez uderzenia (liczba sekund symulacji, min 10 punktów tj 1s - 10pkt, 2s - 20 pkt itd)
                     reward = sym_time * 10
-                    self.get_logger().info(f'Reward for simulation time at end: {reward}')
-                #instynkt
-                if (self.previous_distance_status in ["close", "very close"]) and current_distance_status in ["safe", "far"]:
-                    reward += 35
-                    self.get_logger().info(f'Reward for avoiding collision: {reward}')
+                if self.previous_distance_status in ["close", "very close"] and current_distance_status in ["safe", "far"]:
+                    reward += 30 
+                elif self.previous_distance_status in ["very close"] and current_distance_status == "close":
+                    reward += 20
+                elif self.previous_distance_status in ["safe"] and current_distance_status == "far":
+                    reward += 10
+                elif self.previous_distance_status == "close" and current_distance_status == "very close":
+                    reward -= 10
             else:
-                # Penalty for collision
-                reward = (-20 + sym_time * (-10))
-                self.get_logger().info(f'Penalty for collision: {reward}')
-
+                reward = (-50 + sym_time * (-10))
             self.previous_distance_status = current_distance_status
         else:
-            # No reward if no obstacle data
             self.get_logger().info('No data available for reward calculation.')
 
         return reward
+
 
     def save_data_to_json(self, final_reward=False):
         if self.simulation_duration is not None:
@@ -207,15 +202,16 @@ class AutoDriveNode(Node):
                 "reward": reward
             }
 
+            filename = f'driving_data_{self.robot_type.lower()}.json'
             try:
-                with open('driving_data.json', 'r') as json_file:
+                with open(filename, 'r') as json_file:
                     data_history = json.load(json_file)
             except FileNotFoundError:
                 data_history = []
 
             data_history.append(data)
 
-            with open('driving_data.json', 'w') as json_file:
+            with open(filename, 'w') as json_file:
                 json.dump(data_history, json_file, indent=4)
 
 

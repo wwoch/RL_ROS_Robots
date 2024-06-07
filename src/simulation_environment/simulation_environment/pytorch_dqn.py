@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import os
 import random
 import torch
 import torch.nn as nn
@@ -40,30 +41,12 @@ direction_mapping = {
     "hard right": 2
 }
 
-with open('driving_data.json', 'r') as f:
-    driving_data = json.load(f)
-
-states = []
-actions = []
-rewards = []
-next_states = []
-
-for i in range(len(driving_data) - 1):
-    state = [distance_mapping[driving_data[i]['distance_to_obstacle']], direction_mapping[driving_data[i]['current_direction']]]
-    next_state = [distance_mapping[driving_data[i + 1]['distance_to_obstacle']], direction_mapping[driving_data[i + 1]['current_direction']]]
-    action = direction_mapping[driving_data[i]['current_direction']]
-    reward = driving_data[i]['reward']
-    states.append(state)
-    actions.append(action)
-    rewards.append(reward)
-    next_states.append(next_state)
-
 class DQN(nn.Module):
     def __init__(self, in_position, out_actions):
         super(DQN, self).__init__()
-        self.fc1 = nn.Linear(in_position, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, out_actions)
+        self.fc1 = nn.Linear(in_position, 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc3 = nn.Linear(256, out_actions)
     
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -143,6 +126,7 @@ def optimize_model():
 class DQNTrain(Node):
     def __init__(self):
         super().__init__('dqn_train')
+        self.robot_type = self.declare_parameter('robot_type', 'A').get_parameter_value().string_value
         self.subscription = self.create_subscription(
             Bool,
             '/stop_lidar',
@@ -159,23 +143,61 @@ class DQNTrain(Node):
     def train_dqn(self):
         self.get_logger().info(f'TRAIN DQN STARTING...')
 
+        filenames = ['driving_data_a.json', 'driving_data_b.json']
+        driving_data = []
+        files_found = 0
+
+        for filename in filenames:
+            if os.path.exists(filename):
+                with open(filename, 'r') as f:
+                    data = json.load(f)
+                    driving_data.extend(data)
+                    files_found += 1
+
+        if driving_data:
+            if files_found == 2:
+                output_filename = 'driving_data_c.json'
+            else:
+                output_filename = f'driving_data_{self.robot_type.lower()}.json'
+            
+            with open(output_filename, 'w') as f:
+                json.dump(driving_data, f)
+
+        else:
+            self.get_logger().warning(f'No driving data files found.')
+
+        states = []
+        actions = []
+        rewards = []
+        next_states = []
+
+        for i in range(len(driving_data) - 1):
+            state = [distance_mapping[driving_data[i]['distance_to_obstacle']], direction_mapping[driving_data[i]['current_direction']]]
+            next_state = [distance_mapping[driving_data[i + 1]['distance_to_obstacle']], direction_mapping[driving_data[i + 1]['current_direction']]]
+            action = torch.tensor([[direction_mapping[driving_data[i]['current_direction']]]], dtype=torch.long)
+            reward = torch.tensor([driving_data[i]['reward']], dtype=torch.float32)
+            states.append(torch.tensor(state, dtype=torch.float32).unsqueeze(0))
+            actions.append(action)
+            rewards.append(reward)
+            next_states.append(torch.tensor(next_state, dtype=torch.float32).unsqueeze(0))
+
         num_episodes = 50
         for i_episode in range(num_episodes):
             for t in range(len(states)):
-                state = torch.tensor([states[t]], dtype=torch.float32).to(device)
-                action = torch.tensor([[actions[t]]], dtype=torch.long).to(device)
-                reward = torch.tensor([rewards[t]], dtype=torch.float32).to(device)
-                next_state = torch.tensor([next_states[t]], dtype=torch.float32).to(device)
+                state = states[t].to(device)
+                action = actions[t].to(device)
+                reward = rewards[t].to(device)
+                next_state = next_states[t].to(device)
 
                 memory.push(state, action, reward, next_state)
 
                 optimize_model()
             
-            if i_episode % 10 == 0:
+            if i_episode % 5 == 0:
                 target_net.load_state_dict(policy_net.state_dict())
         self.get_logger().info(f'TRAIN DQN FINISH!')
 
-torch.save(policy_net.state_dict(), 'dqn_model.pth')
+        torch.save(policy_net.state_dict(), f'dqn_model_{self.robot_type.lower()}.pth')
 
 def main(args=None):
     rclpy.init(args=args)
