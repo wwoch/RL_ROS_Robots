@@ -18,10 +18,9 @@ class AutoDriveNode(Node):
         self.subscription_collision = self.create_subscription(Bool, '/collision_detected', self.obstacle_callback, 10)
         self.publisher_stop_lidar = self.create_publisher(Bool, '/stop_lidar', 10)
 
-        self.data_timer = self.create_timer(0.2, self.data_timer_callback)  # Co ile odbierać dane
-        self.direction_timer = self.create_timer(1.0, self.direction_timer_callback)  # Co ile zmieniać kierunek jazdy
-        self.time_check_timer = self.create_timer(0.1, self.time_check_callback)  # Timer do czasu symulacji
-
+        self.data_timer = self.create_timer(0.2, self.data_timer_callback)
+        self.direction_timer = self.create_timer(1.0, self.direction_timer_callback)
+        self.time_check_timer = self.create_timer(0.1, self.time_check_callback)
         self.current_direction = random.uniform(-(math.pi/2), math.pi/2)
         self.current_velocity = 0.5
         self.distance_to_obstacle = None
@@ -163,10 +162,6 @@ class AutoDriveNode(Node):
                      reward += 10
                 elif self.previous_distance_status == "close" and current_distance_status == "very close":
                     reward -= 10
-                #if self.previous_distance_status == "forward" and current_distance_status == "forward":
-                    #reward += 5  # Reward for going straight
-                #else:
-                    #reward -= 5  # Penalty for turns
             else:
                 reward = (-50 + sym_time * (-10))
             self.previous_distance_status = current_distance_status
@@ -217,7 +212,6 @@ class AutoDriveNode(Node):
 
             with open(filename, 'w') as json_file:
                 json.dump(data_history, json_file, indent=4)
-
 
 def main(args=None):
     rclpy.init(args=args)

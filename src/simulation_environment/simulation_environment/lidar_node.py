@@ -22,7 +22,7 @@ class MinimalDistanceNode(Node):
         self.publisher_distance = self.create_publisher(Float32, '/distance_to_obstacle', 10)
         self.publisher_collision = self.create_publisher(Bool, '/collision_detected', 10)
         self.timer = self.create_timer(0.1, self.timer_callback)
-        self.stop_lidar = False #zatrzymanie publikowania po osiągnięciu sim_limit
+        self.stop_lidar = False
 
     def listener_callback(self, msg):
         if self.stop_lidar:

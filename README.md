@@ -94,3 +94,8 @@ Test the combined DQN model for Robot C (using the knowledge from Robots A and B
    ./run_test_c_env.sh
    ```
 
+### In addition, in order to check the design of the robot in RViz
+
+```bash
+   ./run_exp_bot.sh
+   ```

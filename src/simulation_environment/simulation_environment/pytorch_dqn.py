@@ -24,7 +24,6 @@ EPSILON_DECAY = 200
 LR = 0.01
 MEMORY_SIZE = 10000
 
-# Mapowanie stringów na liczby
 distance_mapping = {
     "hit": 0,
     "very close": 1,
@@ -60,19 +59,16 @@ class ReplayBuffer(object):
         self.memory = deque([], maxlen=capacity)
     
     def push(self, *args):
-        #zapis doświadczenia do bufora
         self.memory.append(Transition(*args))
     
     def sample(self, batch_size):
-        #losow wybiera batch_size doświadczeń z bufora
         return random.sample(self.memory, batch_size)
     
     def __len__(self):
         return len(self.memory)
 
-n_actions = 5 #mocno w lewo lub prawo, skręt w lewo lub prawo, prosto
-robot_state = 2 #odleglosc od przeszkody i kierunek
-
+n_actions = 5
+robot_state = 2
 policy_net = DQN(robot_state, n_actions).to(device)
 target_net = DQN(robot_state, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
