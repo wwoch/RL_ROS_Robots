@@ -54,7 +54,7 @@ def generate_launch_description():
         arguments=[
             '-topic', 'robot_description',
             '-entity', 'my_bot',
-            '-x', '-4', '-y', '-5'
+            '-x', '-3', '-y', '-3'
         ],
         output='screen',
         condition=IfCondition(PythonExpression(["'", LaunchConfiguration('robot_type'), "' == 'B'"]))
@@ -75,13 +75,6 @@ def generate_launch_description():
         parameters=[{'robot_type': robot_type}]
     )
 
-    pytorch_dqn = Node(
-        package='simulation_environment',
-        executable='pytorch_dqn.py',
-        name='pytorch_dqn',
-        output='screen',
-    )
-
     return LaunchDescription([
         DeclareLaunchArgument(
             'robot_type',
@@ -94,6 +87,5 @@ def generate_launch_description():
         spawn_entity_A,
         spawn_entity_B,
         lidar_node,
-        train_auto_drive_node,
-        pytorch_dqn
+        train_auto_drive_node
     ])

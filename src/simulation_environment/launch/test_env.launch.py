@@ -9,9 +9,7 @@ from launch_ros.actions import Node
 from launch.actions import Shutdown, RegisterEventHandler
 from launch.event_handlers import OnProcessExit, OnProcessIO
 
-
 def generate_launch_description():
- 
     urdf_path = os.path.join(get_package_share_path('explorer_bot'),
                              'urdf', 'my_robot.urdf.xacro')
 
@@ -21,10 +19,11 @@ def generate_launch_description():
     rviz_config_path = os.path.join(get_package_share_path('simulation_environment'),
                              'rviz', 'urdf_config.rviz')
 
-
     robot_description = ParameterValue(Command(['xacro ', urdf_path]), value_type=str)
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+
+    robot_type = LaunchConfiguration('robot_type')
 
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
@@ -65,10 +64,16 @@ def generate_launch_description():
         executable='test_auto_drive_node.py',
         name='test_auto_drive_node',
         output='screen',
+        parameters=[{'robot_type': robot_type}]
     )
 
     return LaunchDescription([
-        robot_state_publisher,        
+        DeclareLaunchArgument(
+            'robot_type',
+            default_value='C',
+            description='Type of robot to train (A, B or C)'
+        ),
+        robot_state_publisher,
         gazebo,
         spawn_entity,
         rviz2_node,

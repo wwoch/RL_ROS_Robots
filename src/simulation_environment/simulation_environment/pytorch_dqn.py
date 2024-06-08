@@ -21,7 +21,7 @@ GAMMA = 0.99
 EPSILON_START = 1.0
 EPSILON_END = 0.1
 EPSILON_DECAY = 200
-LR = 0.001
+LR = 0.01
 MEMORY_SIZE = 10000
 
 # Mapowanie stringów na liczby
@@ -34,19 +34,19 @@ distance_mapping = {
 }
 
 direction_mapping = {
-    "hard left": -2,
-    "left": -1,
-    "forward": 0,
-    "right": 1,
-    "hard right": 2
+    "hard left": 0,
+    "left": 1,
+    "forward": 2,
+    "right": 3,
+    "hard right": 4
 }
 
 class DQN(nn.Module):
     def __init__(self, in_position, out_actions):
         super(DQN, self).__init__()
-        self.fc1 = nn.Linear(in_position, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, out_actions)
+        self.fc1 = nn.Linear(in_position, 128)
+        self.fc2 = nn.Linear(128, 128)
+        self.fc3 = nn.Linear(128, out_actions)
     
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -127,19 +127,8 @@ class DQNTrain(Node):
     def __init__(self):
         super().__init__('dqn_train')
         self.robot_type = self.declare_parameter('robot_type', 'A').get_parameter_value().string_value
-        self.subscription = self.create_subscription(
-            Bool,
-            '/stop_lidar',
-            self.listener_callback,
-            10)
-        self.subscription
-        self.training_started = False
-    
-    def listener_callback(self,msg):
-        if msg.data and not self.training_started:
-            self.training_started = True
-            self.train_dqn()
-    
+        self.train_dqn()
+
     def train_dqn(self):
         self.get_logger().info(f'TRAIN DQN STARTING...')
 
@@ -181,7 +170,7 @@ class DQNTrain(Node):
             rewards.append(reward)
             next_states.append(torch.tensor(next_state, dtype=torch.float32).unsqueeze(0))
 
-        num_episodes = 50
+        num_episodes = 200
         for i_episode in range(num_episodes):
             for t in range(len(states)):
                 state = states[t].to(device)
@@ -195,9 +184,18 @@ class DQNTrain(Node):
             
             if i_episode % 5 == 0:
                 target_net.load_state_dict(policy_net.state_dict())
-        self.get_logger().info(f'TRAIN DQN FINISH!')
+                self.get_logger().info(f'Episode {i_episode}, Updated target network')
 
-        torch.save(policy_net.state_dict(), f'dqn_model_{self.robot_type.lower()}.pth')
+        model_a_exists = os.path.exists('dqn_model_a.pth')
+        model_b_exists = os.path.exists('dqn_model_b.pth')
+
+        if model_a_exists and model_b_exists:
+            model_filename = 'dqn_model_c.pth'
+        else:
+            model_filename = f'dqn_model_{self.robot_type.lower()}.pth'
+
+        torch.save(policy_net.state_dict(), model_filename)
+        self.get_logger().info(f'TRAIN DQN FINISH!')
 
 def main(args=None):
     rclpy.init(args=args)

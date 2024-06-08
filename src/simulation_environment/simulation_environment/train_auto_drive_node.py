@@ -30,10 +30,10 @@ class AutoDriveNode(Node):
  
         self.reset_simulation_client = self.create_client(Empty, '/reset_simulation')
         self.simulation_count = 0
-        self.simulation_limit = 2
+        self.simulation_limit = 50
         self.simulation_start_time = self.get_clock().now()  
         self.simulation_duration = None  
-        self.simulation_time_limit = 7.0
+        self.simulation_time_limit = 5.0
         
         self.publish_velocity()
         self.clear_json_file()
@@ -156,13 +156,17 @@ class AutoDriveNode(Node):
                 if final_reward:
                     reward = sym_time * 10
                 if self.previous_distance_status in ["close", "very close"] and current_distance_status in ["safe", "far"]:
-                    reward += 30 
+                    reward += 35
                 elif self.previous_distance_status in ["very close"] and current_distance_status == "close":
-                    reward += 20
+                    reward += 25
                 elif self.previous_distance_status in ["safe"] and current_distance_status == "far":
-                    reward += 10
+                     reward += 10
                 elif self.previous_distance_status == "close" and current_distance_status == "very close":
                     reward -= 10
+                #if self.previous_distance_status == "forward" and current_distance_status == "forward":
+                    #reward += 5  # Reward for going straight
+                #else:
+                    #reward -= 5  # Penalty for turns
             else:
                 reward = (-50 + sym_time * (-10))
             self.previous_distance_status = current_distance_status
